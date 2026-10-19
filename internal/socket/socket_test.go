@@ -58,11 +58,6 @@ type mockControl struct {
 }
 
 func TestControlMessage(t *testing.T) {
-	switch runtime.GOOS {
-	case "windows":
-		t.Skipf("not supported on %s", runtime.GOOS)
-	}
-
 	for _, tt := range []struct {
 		cs []mockControl
 	}{
