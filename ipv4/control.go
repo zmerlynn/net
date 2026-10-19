@@ -5,6 +5,7 @@
 package ipv4
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -52,6 +53,24 @@ func (cm *ControlMessage) String() string {
 		return "<nil>"
 	}
 	return fmt.Sprintf("ttl=%d src=%v dst=%v ifindex=%d", cm.TTL, cm.Src, cm.Dst, cm.IfIndex)
+}
+
+// validateWindows checks send controls independently of Windows socket I/O.
+func (cm *ControlMessage) validateWindows() error {
+	if cm == nil {
+		return nil
+	}
+	// Like Marshal on other platforms, ignore TTL, which is receive-only,
+	// a non-IPv4 source and a non-positive interface index.
+	if cm.IfIndex > 0 && uint64(cm.IfIndex) > uint64(^uint32(0)) {
+		return errors.New("invalid control message")
+	}
+	// Windows does not choose a source for a zero IN_PKTINFO address,
+	// so an interface index alone cannot select the outgoing interface.
+	if cm.IfIndex > 0 && (cm.Src.To4() == nil || cm.Src.IsUnspecified()) {
+		return errors.New("source address required with interface index on Windows")
+	}
+	return nil
 }
 
 // Marshal returns the binary encoding of cm.
