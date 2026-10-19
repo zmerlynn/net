@@ -117,6 +117,12 @@ func (cm *ControlMessage) Marshal() []byte {
 
 // Parse parses b as a control message and stores the result in cm.
 func (cm *ControlMessage) Parse(b []byte) error {
+	// An empty receive option table, as on Windows, means parsing is
+	// unsupported even if socket can decode the control message headers.
+	if ctlOpts[ctlTrafficClass].parse == nil && ctlOpts[ctlHopLimit].parse == nil &&
+		ctlOpts[ctlPacketInfo].parse == nil && ctlOpts[ctlPathMTU].parse == nil {
+		return errNotImplemented
+	}
 	ms, err := socket.ControlMessage(b).Parse()
 	if err != nil {
 		return err
